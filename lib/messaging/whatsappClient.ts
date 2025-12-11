@@ -1,4 +1,5 @@
 // lib/messaging/whatsappClient.ts
+// VERSIÓN DEFINITIVA - MOCK siempre funciona
 
 export type ProviderType = "MOCK" | "EVOLUTION" | "ZOKO" | "META";
 
@@ -10,7 +11,11 @@ export type WhatsappClientResponse = {
 
 /**
  * Punto único para enviar mensajes de WhatsApp.
- * Soporta MOCK (siempre exitoso), EVOLUTION, ZOKO y META (stubs por ahora).
+ * 
+ * REGLAS CRÍTICAS:
+ * - MOCK: SIEMPRE retorna success: true, sin validaciones
+ * - MOCK: NUNCA lanza errores
+ * - Otros providers: stubs que siempre retornan success para no bloquear
  */
 export async function sendWhatsAppMessage(params: {
   provider: ProviderType;
@@ -22,7 +27,9 @@ export async function sendWhatsAppMessage(params: {
 }): Promise<WhatsappClientResponse> {
   const { provider, token, phoneNumber, message, metaPhoneId, metaTemplateName } = params;
 
-  // 1) MODO MOCK → siempre OK, sin validaciones
+  // ============================================
+  // MOCK: SIEMPRE EXITOSO - SIN VALIDACIONES
+  // ============================================
   if (provider === "MOCK") {
     console.log("[MOCK WHATSAPP]", { phoneNumber, message });
     return {
@@ -31,7 +38,9 @@ export async function sendWhatsAppMessage(params: {
     };
   }
 
-  // 2) Validación para proveedores reales
+  // ============================================
+  // VALIDACIÓN SOLO PARA PROVEEDORES REALES
+  // ============================================
   if (!token || !phoneNumber) {
     return {
       success: false,
@@ -40,7 +49,9 @@ export async function sendWhatsAppMessage(params: {
     };
   }
 
-  // 3) Routing por proveedor
+  // ============================================
+  // ROUTING POR PROVEEDOR (STUBS)
+  // ============================================
   switch (provider) {
     case "EVOLUTION":
       console.log("[EVOLUTION STUB]", { phoneNumber, message, hasToken: !!token });
@@ -57,7 +68,6 @@ export async function sendWhatsAppMessage(params: {
       };
 
     case "META":
-      // Stub para META - puede funcionar sin campos Meta para pruebas
       console.log("[META STUB]", {
         phoneNumber,
         message,
@@ -71,7 +81,9 @@ export async function sendWhatsAppMessage(params: {
       };
 
     default:
-      // Este caso no debería ocurrir si ProviderType está bien tipado
+      // Este caso NO debería ocurrir con ProviderType bien tipado
+      // Pero si ocurre, es un error de tipo, no de MOCK
+      const _exhaustiveCheck: never = provider;
       return {
         success: false,
         messageId: null,
@@ -79,4 +91,3 @@ export async function sendWhatsAppMessage(params: {
       };
   }
 }
-  

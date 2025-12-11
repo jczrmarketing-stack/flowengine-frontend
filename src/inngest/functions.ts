@@ -1,4 +1,6 @@
 // src/inngest/functions.ts
+// VERSIÓN DEFINITIVA - Flujo de abandono de carrito
+
 import { inngest } from "./client";
 import { createAuthenticatedServerClient } from "@/lib/supabase/server";
 import {
@@ -32,7 +34,9 @@ export const abandonmentFlow = inngest.createFunction(
   async ({ event, step }) => {
     const data = event.data as AbandonmentEventData;
 
-    // a) fetch-tenant-config
+    // ============================================
+    // STEP 1: fetch-tenant-config
+    // ============================================
     const { config } = await step.run("fetch-tenant-config", async () => {
       const supabase = await createAuthenticatedServerClient();
 
@@ -57,11 +61,15 @@ export const abandonmentFlow = inngest.createFunction(
       return { config: tienda as TiendaConfig };
     });
 
-    // b) wait-for-dynamic-delay
+    // ============================================
+    // STEP 2: wait-for-dynamic-delay
+    // ============================================
     const delayMinutes = config.flow_abandono_delay_min ?? 60;
     await step.sleep("wait-for-dynamic-delay", `${delayMinutes}m`);
 
-    // c) generate-ai-message
+    // ============================================
+    // STEP 3: generate-ai-message
+    // ============================================
     const message = await step.run("generate-ai-message", async () => {
       const amount = (data.total_price ?? data.cart_value ?? 0) as number;
       const shopName =
@@ -70,8 +78,11 @@ export const abandonmentFlow = inngest.createFunction(
       return `Hola 👋, soy el asistente de ${shopName}. Vimos que dejaste un carrito por $${amount}. ¿Te ayudo a finalizar tu compra?`;
     });
 
-    // d) dispatch-whatsapp-message
+    // ============================================
+    // STEP 4: dispatch-whatsapp-message
+    // ============================================
     const sendResult = await step.run("dispatch-whatsapp-message", async () => {
+      // Provider por defecto: MOCK (garantizado)
       const provider: ProviderType =
         (config.whatsapp_provider ?? "MOCK") as ProviderType;
 
@@ -81,6 +92,8 @@ export const abandonmentFlow = inngest.createFunction(
         config.whatsapp_phone_number ??
         "";
 
+      // Llamada a sendWhatsAppMessage
+      // MOCK siempre retorna success: true
       return await sendWhatsAppMessage({
         provider,
         token,
@@ -91,12 +104,15 @@ export const abandonmentFlow = inngest.createFunction(
       });
     });
 
+    // Validación de resultado
+    // Si MOCK está bien implementado, esto nunca debería fallar
     if (!sendResult.success) {
       throw new Error(
         `WhatsApp send failed: ${sendResult.error ?? "unknown error"}`
       );
     }
 
+    // Retorno exitoso
     return {
       status: "completed",
       tenant_id: config.tenant_id,

@@ -80,7 +80,7 @@ export const abandonmentFlow = inngest.createFunction(
 
     // --- 4) Enviar WhatsApp usando la abstracción ---
     const sendResult = await step.run("dispatch-whatsapp-message", async () => {
-      // 👇 Clave: default = "MOCK" para no depender aún de ningún proveedor real
+      // Default = "MOCK" para no depender de proveedor real
       const provider: ProviderType =
         (config.whatsapp_provider ?? "MOCK") as ProviderType;
 
@@ -102,7 +102,6 @@ export const abandonmentFlow = inngest.createFunction(
     });
 
     if (!sendResult.success) {
-      // Esto hace que Inngest marque la ejecución como fallo y permita reintentos.
       throw new Error(
         `WhatsApp send failed: ${sendResult.error ?? "unknown error"}`
       );

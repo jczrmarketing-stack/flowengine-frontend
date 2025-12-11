@@ -1,113 +1,82 @@
 // lib/messaging/whatsappClient.ts
 
+export type ProviderType = "MOCK" | "EVOLUTION" | "ZOKO" | "META";
+
 export type WhatsappClientResponse = {
-    success: boolean;
-    messageId: string | null;
-    error?: string;
-  };
-  
-  // Proveedores soportados en esta fase
-  export type ProviderType = "MOCK" | "EVOLUTION" | "ZOKO";
-  
-  type SendParams = {
-    provider: ProviderType;
-    token: string;        // Token/API key (no se usa en MOCK)
-    phoneNumber: string;  // Número del cliente
-    message: string;      // Mensaje final generado por la IA
-  
-    // Campos opcionales para el futuro (Meta, etc.)
-    metaPhoneId?: string;
-    metaTemplateName?: string;
-  };
-  
-  /**
-   * Punto ÚNICO para enviar mensajes de WhatsApp.
-   * Cada proveedor tiene su implementación debajo.
-   */
-  export async function sendWhatsAppMessage({
-    provider,
-    token,
-    phoneNumber,
-    message,
-  }: SendParams): Promise<WhatsappClientResponse> {
-    //
-    // 1) MODO MOCK → para pruebas y demos sin tocar ninguna API real
-    //
-    if (provider === "MOCK") {
-      console.log("[MOCK WHATSAPP] →", { phoneNumber, message });
-  
-      // Simulamos éxito siempre
+  success: boolean;
+  messageId: string | null;
+  error?: string;
+};
+
+/**
+ * Punto único para enviar mensajes de WhatsApp.
+ * Soporta MOCK (siempre exitoso), EVOLUTION, ZOKO y META (stubs por ahora).
+ */
+export async function sendWhatsAppMessage(params: {
+  provider: ProviderType;
+  token: string;
+  phoneNumber: string;
+  message: string;
+  metaPhoneId?: string;
+  metaTemplateName?: string;
+}): Promise<WhatsappClientResponse> {
+  const { provider, token, phoneNumber, message, metaPhoneId, metaTemplateName } = params;
+
+  // 1) MODO MOCK → siempre OK, sin validaciones
+  if (provider === "MOCK") {
+    console.log("[MOCK WHATSAPP]", { phoneNumber, message });
+    return {
+      success: true,
+      messageId: "mock-message-id",
+    };
+  }
+
+  // 2) Validación para proveedores reales
+  if (!token || !phoneNumber) {
+    return {
+      success: false,
+      messageId: null,
+      error: "Missing token or phone number.",
+    };
+  }
+
+  // 3) Routing por proveedor
+  switch (provider) {
+    case "EVOLUTION":
+      console.log("[EVOLUTION STUB]", { phoneNumber, message, hasToken: !!token });
       return {
         success: true,
-        messageId: "mock-message-id",
+        messageId: "evolution-stub",
       };
-    }
-  
-    //
-    // 2) Validaciones mínimas para proveedores reales
-    //
-    if (!token || !phoneNumber) {
+
+    case "ZOKO":
+      console.log("[ZOKO STUB]", { phoneNumber, message, hasToken: !!token });
+      return {
+        success: true,
+        messageId: "zoko-stub",
+      };
+
+    case "META":
+      // Stub para META - puede funcionar sin campos Meta para pruebas
+      console.log("[META STUB]", {
+        phoneNumber,
+        message,
+        metaPhoneId,
+        metaTemplateName,
+        hasToken: !!token,
+      });
+      return {
+        success: true,
+        messageId: "meta-stub",
+      };
+
+    default:
+      // Este caso no debería ocurrir si ProviderType está bien tipado
       return {
         success: false,
         messageId: null,
-        error: "Missing token or phone number.",
+        error: `Provider ${provider} not supported.`,
       };
-    }
-  
-    //
-    // 3) Routing real por proveedor
-    //
-    switch (provider) {
-      case "EVOLUTION":
-        return await sendToEvolution({ token, phoneNumber, message });
-  
-      case "ZOKO":
-        return await sendToZoko({ token, phoneNumber, message });
-  
-      default:
-        return {
-          success: false,
-          messageId: null,
-          error: `Provider ${provider} not supported.`,
-        };
-    }
   }
-  
-  // ----------------------------------------------------
-  // STUBS PARA PROVEEDORES REALES (por ahora solo loguean)
-  // ----------------------------------------------------
-  
-  async function sendToEvolution({
-    token,
-    phoneNumber,
-    message,
-  }: {
-    token: string;
-    phoneNumber: string;
-    message: string;
-  }): Promise<WhatsappClientResponse> {
-    console.log("[EVOLUTION STUB] →", { phoneNumber, message, token });
-  
-    return {
-      success: true,
-      messageId: "evolution-stub",
-    };
-  }
-  
-  async function sendToZoko({
-    token,
-    phoneNumber,
-    message,
-  }: {
-    token: string;
-    phoneNumber: string;
-    message: string;
-  }): Promise<WhatsappClientResponse> {
-    console.log("[ZOKO STUB] →", { phoneNumber, message, token });
-  
-    return {
-      success: true,
-      messageId: "zoko-stub",
-    };
-  }
+}
   

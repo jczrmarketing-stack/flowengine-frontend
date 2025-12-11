@@ -12,8 +12,6 @@ type TiendaConfig = {
   whatsapp_provider: ProviderType | null;
   whatsapp_api_token: string | null;
   whatsapp_phone_number: string | null;
-
-  // Campos para Meta (aunque hoy estemos en MOCK, los dejamos listos)
   meta_phone_id: string | null;
   meta_template_name: string | null;
 };
@@ -34,42 +32,36 @@ export const abandonmentFlow = inngest.createFunction(
   async ({ event, step }) => {
     const data = event.data as AbandonmentEventData;
 
-    // --- 1) Config del tenant desde Supabase ---
+    // a) fetch-tenant-config
     const { config } = await step.run("fetch-tenant-config", async () => {
       const supabase = await createAuthenticatedServerClient();
 
       const { data: tienda, error } = await supabase
         .from("tiendas")
         .select(
-          [
-            "tenant_id",
-            "flow_abandono_delay_min",
-            "whatsapp_provider",
-            "whatsapp_api_token",
-            "whatsapp_phone_number",
-            "meta_phone_id",
-            "meta_template_name",
-          ].join(", ")
+          "tenant_id, flow_abandono_delay_min, whatsapp_provider, whatsapp_api_token, whatsapp_phone_number, meta_phone_id, meta_template_name"
         )
         .eq("tenant_id", data.tenant_id)
         .single();
 
-      if (error || !tienda) {
+      if (error) {
         throw new Error(
-          `Config not found for tenant ${data.tenant_id}: ${
-            error?.message ?? "no row"
-          }`
+          `Config not found for tenant ${data.tenant_id}: ${error.message}`
         );
+      }
+
+      if (!tienda) {
+        throw new Error(`No row found for tenant ${data.tenant_id}`);
       }
 
       return { config: tienda as TiendaConfig };
     });
 
-    // --- 2) Delay dinámico según la tienda ---
+    // b) wait-for-dynamic-delay
     const delayMinutes = config.flow_abandono_delay_min ?? 60;
     await step.sleep("wait-for-dynamic-delay", `${delayMinutes}m`);
 
-    // --- 3) Mensaje IA (placeholder) ---
+    // c) generate-ai-message
     const message = await step.run("generate-ai-message", async () => {
       const amount = (data.total_price ?? data.cart_value ?? 0) as number;
       const shopName =
@@ -78,14 +70,12 @@ export const abandonmentFlow = inngest.createFunction(
       return `Hola 👋, soy el asistente de ${shopName}. Vimos que dejaste un carrito por $${amount}. ¿Te ayudo a finalizar tu compra?`;
     });
 
-    // --- 4) Enviar WhatsApp usando la abstracción ---
+    // d) dispatch-whatsapp-message
     const sendResult = await step.run("dispatch-whatsapp-message", async () => {
-      // Default = "MOCK" para no depender de proveedor real
       const provider: ProviderType =
         (config.whatsapp_provider ?? "MOCK") as ProviderType;
 
       const token = config.whatsapp_api_token ?? "";
-
       const phoneNumber =
         (data.phone as string | undefined) ??
         config.whatsapp_phone_number ??

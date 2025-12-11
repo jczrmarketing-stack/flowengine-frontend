@@ -1,58 +1,54 @@
-import { createAuthenticatedServerClient } from '@/lib/supabase/server';
-import { errorResponse, successResponse, validateRequiredFields } from '@/lib/utils/api-response';
-import type { Tienda } from '@/types/database';
+import { createAuthenticatedServerClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
 
+// POST /api/onboard
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { clerk_user_id, shopify_token, shopify_shop_name } = body;
 
-    // Validar campos requeridos
-    const validation = validateRequiredFields(
-      { clerk_user_id, shopify_token, shopify_shop_name },
-      ['clerk_user_id', 'shopify_token', 'shopify_shop_name']
-    );
+    const { clerk_user_id, shopify_shop_name, shopify_token } = body;
 
-    if (!validation.isValid) {
-      return errorResponse(
-        'Datos de onboarding incompletos',
-        400,
-        { missingFields: validation.missingFields }
+    if (!clerk_user_id || !shopify_shop_name || !shopify_token) {
+      return NextResponse.json(
+        { error: "Missing required fields." },
+        { status: 400 }
       );
     }
 
-    // Crear cliente de Supabase
     const supabase = await createAuthenticatedServerClient();
 
-    // Insertar tienda
     const { data, error } = await supabase
-      .from('tiendas')
+      .from("tiendas")
       .insert([
         {
           clerk_user_id,
-          shopify_token,
           shopify_shop_name,
+          shopify_token,
+          health_status: "OK",
         },
       ])
       .select()
       .single();
 
     if (error) {
-      console.error('Error al registrar la tienda:', error);
-      return errorResponse('Fallo al registrar la tienda', 500, error);
+      console.error("DB ERROR:", error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
 
-    return successResponse<Tienda>(
-      data,
-      'Tenant creado con éxito',
-      201
+    return NextResponse.json(
+      {
+        message: "Tenant creado con éxito.",
+        tenant: data,
+      },
+      { status: 200 }
     );
-  } catch (error) {
-    console.error('Error en el endpoint de onboarding:', error);
-    return errorResponse(
-      'Error al procesar la solicitud',
-      500,
-      error instanceof Error ? error.message : 'Error desconocido'
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Unknown error" },
+      { status: 500 }
     );
   }
 }

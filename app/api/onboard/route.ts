@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server';
+import { createAuthenticatedServerClient } from '@/lib/supabase/server';
 import { errorResponse, successResponse, validateRequiredFields } from '@/lib/utils/api-response';
 import type { Tienda } from '@/types/database';
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }
 
     // Crear cliente de Supabase
-    const supabase = createServerClient();
+    const supabase = await createAuthenticatedServerClient();
 
     // Insertar tienda
     const { data, error } = await supabase

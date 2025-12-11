@@ -1,65 +1,71 @@
-import Image from "next/image";
+// app/page.tsx
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 selection:bg-emerald-500/30">
+      {/* Tarjeta central */}
+      <div className="max-w-xl w-full px-8 py-12 border border-neutral-800 rounded-2xl bg-neutral-900/40 backdrop-blur-sm shadow-2xl shadow-emerald-900/10">
+        {/* Header */}
+        <div className="mb-8">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-emerald-500 font-bold mb-3">
+            SISTEMA OPERATIVO
           </p>
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-neutral-500 bg-clip-text text-transparent">
+            FlowEngine EdgeCore
+          </h1>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+
+        {/* Descripción */}
+        <p className="text-sm text-neutral-400 mb-8 leading-relaxed">
+          Bienvenido al mando central. La infraestructura multi-tenant está activa.
+          <br />
+          <span className="text-neutral-500">Estado: </span>
+          <span className="text-emerald-400">● Sistema Operacional</span>
+        </p>
+
+        {/* Acciones */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link
+            href="/tiendas"
+            className="group flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-sm font-semibold hover:bg-neutral-200 transition-all active:scale-95"
+          >
+            Gestionar Tiendas
+            <svg
+              className="w-4 h-4 transition-transform group-hover:translate-x-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
+            </svg>
+          </Link>
+
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://dawn-haze-9df3.flowengine-edgecore.workers.dev"
             target="_blank"
             rel="noopener noreferrer"
+            className="flex items-center justify-center px-5 py-2.5 rounded-lg border border-neutral-800 text-neutral-400 text-sm hover:text-white hover:border-neutral-600 transition-colors bg-black"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+            <span>Ver Edge Worker</span>
           </a>
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Footer técnico */}
+      <div className="mt-12 flex gap-6 text-[10px] text-neutral-600 font-mono uppercase tracking-wider">
+        <span>Next.js</span>
+        <span>•</span>
+        <span>Supabase</span>
+        <span>•</span>
+        <span>Cloudflare</span>
+      </div>
+    </main>
   );
 }
+

@@ -9,9 +9,13 @@ import {
 type TiendaConfig = {
   tenant_id: string;
   flow_abandono_delay_min: number;
-  whatsapp_provider: ProviderType;
+  whatsapp_provider: ProviderType | null;
   whatsapp_api_token: string | null;
   whatsapp_phone_number: string | null;
+
+  // Campos para Meta (aunque hoy estemos en MOCK, los dejamos listos)
+  meta_phone_id: string | null;
+  meta_template_name: string | null;
 };
 
 type AbandonmentEventData = {
@@ -26,8 +30,6 @@ type AbandonmentEventData = {
 
 export const abandonmentFlow = inngest.createFunction(
   { id: "abandonment-recovery-flow" },
-  // Por ahora seguimos usando el evento manual:
-  // "app/abandonment.triggered"
   { event: "app/abandonment.triggered" },
   async ({ event, step }) => {
     const data = event.data as AbandonmentEventData;
@@ -39,7 +41,15 @@ export const abandonmentFlow = inngest.createFunction(
       const { data: tienda, error } = await supabase
         .from("tiendas")
         .select(
-          "tenant_id, flow_abandono_delay_min, whatsapp_provider, whatsapp_api_token, whatsapp_phone_number"
+          [
+            "tenant_id",
+            "flow_abandono_delay_min",
+            "whatsapp_provider",
+            "whatsapp_api_token",
+            "whatsapp_phone_number",
+            "meta_phone_id",
+            "meta_template_name",
+          ].join(", ")
         )
         .eq("tenant_id", data.tenant_id)
         .single();
@@ -70,10 +80,12 @@ export const abandonmentFlow = inngest.createFunction(
 
     // --- 4) Enviar WhatsApp usando la abstracción ---
     const sendResult = await step.run("dispatch-whatsapp-message", async () => {
+      // 👇 Clave: default = "MOCK" para no depender aún de ningún proveedor real
       const provider: ProviderType =
-        (config.whatsapp_provider ?? "ZOKO") as ProviderType;
+        (config.whatsapp_provider ?? "MOCK") as ProviderType;
 
       const token = config.whatsapp_api_token ?? "";
+
       const phoneNumber =
         (data.phone as string | undefined) ??
         config.whatsapp_phone_number ??
@@ -84,6 +96,8 @@ export const abandonmentFlow = inngest.createFunction(
         token,
         phoneNumber,
         message,
+        metaPhoneId: config.meta_phone_id ?? undefined,
+        metaTemplateName: config.meta_template_name ?? undefined,
       });
     });
 

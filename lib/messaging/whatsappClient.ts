@@ -1,23 +1,28 @@
 // lib/messaging/whatsappClient.ts
 
+// Respuesta estándar del cliente
 export type WhatsappClientResponse = {
     success: boolean;
     messageId: string | null;
     error?: string;
   };
   
-  export type ProviderType = "ZOKO" | "EVOLUTION" | "TWILIO" | "NONE";
+  // Proveedores soportados hoy
+  export type ProviderType = "MOCK" | "EVOLUTION" | "ZOKO";
   
+  // Parámetros de envío (dejamos meta* opcionales para el futuro)
   type SendParams = {
     provider: ProviderType;
-    token: string;
-    phoneNumber: string;
-    message: string;
+    token: string;          // para EVOLUTION / ZOKO (en MOCK se ignora)
+    phoneNumber: string;    // número del cliente
+    message: string;        // texto generado por la IA
+    metaPhoneId?: string;   // reservado para Meta más adelante
+    metaTemplateName?: string;
   };
   
   /**
    * Punto ÚNICO para enviar mensajes de WhatsApp.
-   * La lógica específica de cada proveedor se esconde aquí.
+   * Aquí se enruta según el provider.
    */
   export async function sendWhatsAppMessage({
     provider,
@@ -25,6 +30,14 @@ export type WhatsappClientResponse = {
     phoneNumber,
     message,
   }: SendParams): Promise<WhatsappClientResponse> {
+    // 1) MODO MOCK → no requiere token ni número real
+    if (provider === "MOCK") {
+      console.log("[MOCK WHATSAPP] →", { phoneNumber, message });
+      // Simulamos un envío exitoso
+      return { success: true, messageId: "mock-message-id" };
+    }
+  
+    // 2) A partir de aquí los providers reales SÍ requieren token y número
     if (!token || !phoneNumber) {
       return {
         success: false,
@@ -33,76 +46,26 @@ export type WhatsappClientResponse = {
       };
     }
   
+    // 3) Routing por proveedor real
     switch (provider) {
-      case "ZOKO":
-        return await sendToZoko({ token, phoneNumber, message });
       case "EVOLUTION":
         return await sendToEvolution({ token, phoneNumber, message });
-      // TWILIO / NONE caen en default
+  
+      case "ZOKO":
+        return await sendToZoko({ token, phoneNumber, message });
+  
       default:
         return {
           success: false,
           messageId: null,
-          error: `Provider ${provider} not supported yet.`,
+          error: `Provider ${provider} not supported.`,
         };
     }
   }
   
   // ----------------------------------------------------
-  // IMPLEMENTACIONES ESPECÍFICAS (PLACEHOLDERS)
+  // STUB EVOLUTION (para demos / futuro)
   // ----------------------------------------------------
-  
-  async function sendToZoko({
-    token,
-    phoneNumber,
-    message,
-  }: {
-    token: string;
-    phoneNumber: string;
-    message: string;
-  }): Promise<WhatsappClientResponse> {
-    // TODO: Reemplazar por la URL real de la API de Zoko según tu cuenta
-    const ZOKO_API_URL = "https://api.zoko.io/v1/message";
-  
-    try {
-      const response = await fetch(ZOKO_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          recipient: phoneNumber,
-          body: message,
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (response.ok && (data.status === "sent" || data.success)) {
-        return {
-          success: true,
-          messageId: data.message_id ?? data.id ?? "zoko-ok",
-        };
-      }
-  
-      console.error("Zoko API Error:", data);
-      return {
-        success: false,
-        messageId: null,
-        error: data.error || data.message || "Zoko API failed.",
-      };
-    } catch (e) {
-      return {
-        success: false,
-        messageId: null,
-        error: `Network error Zoko: ${
-          e instanceof Error ? e.message : String(e)
-        }`,
-      };
-    }
-  }
-  
   async function sendToEvolution({
     token,
     phoneNumber,
@@ -112,51 +75,32 @@ export type WhatsappClientResponse = {
     phoneNumber: string;
     message: string;
   }): Promise<WhatsappClientResponse> {
-    // Suposición: token = "https://mi-instancia.com|API_KEY"
-    const [instanceUrl, apiKey] = token.split("|");
-    if (!instanceUrl || !apiKey) {
-      return {
-        success: false,
-        messageId: null,
-        error: "Invalid Evolution token format. Expected 'url|apikey'.",
-      };
-    }
+    // Aquí luego pondremos la llamada real a Evolution API.
+    console.log("[EVOLUTION STUB] →", { token, phoneNumber, message });
   
-    const EVOLUTION_API_URL = `${instanceUrl}/message/sendText/${apiKey}`;
-  
-    try {
-      const response = await fetch(EVOLUTION_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          number: phoneNumber,
-          textMessage: { text: message },
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (response.ok && (data.key?.id || data.success)) {
-        return {
-          success: true,
-          messageId: data.key?.id ?? "evolution-ok",
-        };
-      }
-  
-      console.error("Evolution API Error:", data);
-      return {
-        success: false,
-        messageId: null,
-        error: data.message || "Evolution API failed.",
-      };
-    } catch (e) {
-      return {
-        success: false,
-        messageId: null,
-        error: `Network error Evolution: ${
-          e instanceof Error ? e.message : String(e)
-        }`,
-      };
-    }
+    return {
+      success: true,
+      messageId: "evolution-stub",
+    };
   }
+  
+  // ----------------------------------------------------
+  // STUB ZOKO (por si quieres usarlo después)
+  // ----------------------------------------------------
+  async function sendToZoko({
+    token,
+    phoneNumber,
+    message,
+  }: {
+    token: string;
+    phoneNumber: string;
+    message: string;
+  }): Promise<WhatsappClientResponse> {
+    console.log("[ZOKO STUB] →", { token, phoneNumber, message });
+  
+    return {
+      success: true,
+      messageId: "zoko-stub",
+    };
+  }  
   
